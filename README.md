@@ -1,7 +1,7 @@
 
   # ChefHub App
 
-  This is a code bundle for Shopping App. The original project is available at https://www.figma.com/design/WZsot42K4wbR4vn7OLVI2s/Shopping-App.
+  This is a code bundle for ChefApp App. The original project is available at https://www.figma.com/design/WZsot42K4wbR4vn7OLVI2s/Shopping-App.
 
   ## Running the code
 
