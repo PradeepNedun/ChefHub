@@ -58,7 +58,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "lint": "eslint ."
   },
   "lint-staged": {
     ".{js,jsx,ts,tsx,json,css,scss,md}": [
