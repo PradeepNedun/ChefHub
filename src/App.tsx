@@ -31,7 +31,7 @@ const MOCK_CHEFS: Chef[] = [
     available: true,
   },
   {
-      id: 2,
+    id: 2,
     name: "James Chen",
     cuisine: ["Asian", "Fusion"],
     hourlyRate: 7055, // 85 USD
@@ -43,7 +43,7 @@ const MOCK_CHEFS: Chef[] = [
     experience: 15,
     bio: "Award-winning chef blending traditional Asian flavors with contemporary techniques.",
     specialties: ["Sushi", "Dim Sum", "Wok Dishes"],
-    available: true
+    available: true,
   },
   {
     id: 3,
