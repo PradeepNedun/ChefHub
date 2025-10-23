@@ -5,7 +5,7 @@ import { Badge } from "./ui/badge";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 export interface Chef {
-  id: number;
+  id: string;
   name: string;
   cuisine: string[];
   hourlyRate: number;
@@ -18,6 +18,27 @@ export interface Chef {
   bio: string;
   specialties: string[];
   available: boolean;
+  isVeg?: boolean;
+  onlyIndoorCooking?: boolean;
+}
+
+// API Response type
+export interface ChefAPIResponse {
+  id: string;
+  name: string;
+  cuisine: string;
+  hourlyRate: string;
+  location: string;
+  distance: string;
+  image: string;
+  rating: string;
+  reviewCount: string;
+  experience: string;
+  bio: string;
+  specialties: string;
+  available: string;
+  isVeg: string;
+  onlyIndoorCooking: string;
 }
 
 interface ChefCardProps {

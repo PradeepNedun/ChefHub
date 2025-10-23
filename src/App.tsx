@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ChefHeader } from "./components/ChefHeader";
 import { BottomNav } from "./components/BottomNav";
 import { TopBar } from "./components/TopBar";
-import { ChefCard, Chef } from "./components/ChefCard";
+import { ChefCard, Chef, ChefAPIResponse } from "./components/ChefCard";
 import { BookingDialog } from "./components/BookingDialog";
 import { FilterSheet, FilterOptions } from "./components/FilterSheet";
 import { MyBookings } from "./components/MyBookings";
@@ -11,146 +11,116 @@ import { HeroCarousel } from "./components/HeroCarousel";
 import { Login } from "./components/Login";
 import { Button } from "./components/ui/button";
 import { Toaster } from "./components/ui/sonner";
+import { toast } from "sonner@2.0.3";
+import { Loader2 } from "lucide-react";
 import type { Booking } from "./types/booking";
 
-// Prices converted to INR (1 USD ≈ 83 INR)
-const MOCK_CHEFS: Chef[] = [
-  {
-    id: 1,
-    name: "Maria Rodriguez",
-    cuisine: ["Italian", "Mediterranean"],
-    hourlyRate: 6225, // 75 USD
-    location: "Downtown",
-    distance: 2.3,
-    image: "https://images.unsplash.com/photo-1681270543584-8e541a1bb056?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVmJTIwY29va2luZ3xlbnwxfHx8fDE3NjA0NDE3MTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    rating: 4.9,
-    reviewCount: 127,
-    experience: 12,
-    bio: "Specializing in authentic Italian cuisine with a modern twist. Trained in Rome.",
-    specialties: ["Pasta", "Risotto", "Seafood"],
-    available: true,
-  },
-  {
-    id: 2,
-    name: "James Chen",
-    cuisine: ["Asian", "Fusion"],
-    hourlyRate: 7055, // 85 USD
-    location: "Westside",
-    distance: 4.1,
-    image: "https://images.unsplash.com/photo-1583394293214-28ded15ee548?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhc2lhbiUyMGNoZWZ8ZW58MXx8fHwxNzYwNTA5MTk1fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    rating: 4.8,
-    reviewCount: 203,
-    experience: 15,
-    bio: "Award-winning chef blending traditional Asian flavors with contemporary techniques.",
-    specialties: ["Sushi", "Dim Sum", "Wok Dishes"],
-    available: true,
-  },
-  {
-    id: 3,
-    name: "Sophie Laurent",
-    cuisine: ["French", "Pastry"],
-    hourlyRate: 7885, // 95 USD
-    location: "Midtown",
-    distance: 5.7,
-    image: "https://images.unsplash.com/photo-1519733870-f96bef9bc85f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYXN0cnklMjBjaGVmfGVufDF8fHx8MTc2MDUwODc1OXww&ixlib=rb-4.1.0&q=80&w=1080",
-    rating: 5.0,
-    reviewCount: 89,
-    experience: 10,
-    bio: "Classically trained pastry chef from Paris. Expert in French desserts and cuisine.",
-    specialties: ["Pastries", "French Cuisine", "Desserts"],
-    available: true,
-  },
-  {
-    id: 4,
-    name: "Carlos Mendez",
-    cuisine: ["Mexican", "Latin"],
-    hourlyRate: 5395, // 65 USD
-    location: "Southside",
-    distance: 3.2,
-    image: "https://images.unsplash.com/photo-1743353341063-85931c798dc8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBjb29rfGVufDF8fHx8MTc2MDUwOTE5M3ww&ixlib=rb-4.1.0&q=80&w=1080",
-    rating: 4.7,
-    reviewCount: 156,
-    experience: 8,
-    bio: "Bringing authentic Mexican street food and traditional recipes to your home.",
-    specialties: ["Tacos", "Mole", "Ceviche"],
-    available: true,
-  },
-  {
-    id: 5,
-    name: "Rachel Thompson",
-    cuisine: ["American", "BBQ"],
-    hourlyRate: 5810, // 70 USD
-    location: "East End",
-    distance: 8.4,
-    image: "https://images.unsplash.com/photo-1572173838181-589fc8c0a10a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiYnElMjBjaGVmfGVufDF8fHx8MTc2MDUwOTE5Nnww&ixlib=rb-4.1.0&q=80&w=1080",
-    rating: 4.6,
-    reviewCount: 142,
-    experience: 11,
-    bio: "Master of low and slow BBQ, comfort food, and Southern-style cooking.",
-    specialties: ["BBQ", "Smoked Meats", "Southern Food"],
-    available: false,
-  },
-  {
-    id: 6,
-    name: "Alessandro Rossi",
-    cuisine: ["Italian"],
-    hourlyRate: 9960, // 120 USD
-    location: "Harbor District",
-    distance: 6.8,
-    image: "https://images.unsplash.com/photo-1722587592115-cfedd6b84b56?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpdGFsaWFuJTIwY2hlZnxlbnwxfHx8fDE3NjA1MDkxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    rating: 5.0,
-    reviewCount: 76,
-    experience: 20,
-    bio: "Michelin-starred chef offering high-end Italian dining experiences.",
-    specialties: ["Fine Dining", "Truffle Dishes", "Wine Pairing"],
-    available: true,
-  },
-  {
-    id: 7,
-    name: "Emma Wilson",
-    cuisine: ["Vegan", "Health"],
-    hourlyRate: 4980, // 60 USD
-    location: "Green Valley",
-    distance: 7.9,
-    image: "https://images.unsplash.com/photo-1581349485608-9469926a8e5e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZXN0YXVyYW50JTIwY2hlZnxlbnwxfHx8fDE3NjA1MDkxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    rating: 4.8,
-    reviewCount: 98,
-    experience: 7,
-    bio: "Plant-based chef creating delicious and nutritious vegan meals.",
-    specialties: ["Vegan", "Gluten-Free", "Healthy Eating"],
-    available: true,
-  },
-  {
-    id: 8,
-    name: "David Park",
-    cuisine: ["Korean", "Asian"],
-    hourlyRate: 6640, // 80 USD
-    location: "Koreatown",
-    distance: 5.3,
-    image: "https://images.unsplash.com/photo-1709837167686-a2e33aad1bf0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiYWtlciUyMGNoZWZ8ZW58MXx8fHwxNzYwNTA5MTk1fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    rating: 4.9,
-    reviewCount: 134,
-    experience: 9,
-    bio: "Traditional Korean cooking with innovative presentations. BBQ specialist.",
-    specialties: ["Korean BBQ", "Kimchi", "Banchan"],
-    available: true,
-  },
-];
+// Transform API response to Chef interface
+const transformChefData = (apiChef: ChefAPIResponse): Chef => {
+  // Split cuisine string by comma and trim whitespace
+  const cuisineArray = apiChef.cuisine
+    .split(",")
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0);
+
+  // Split specialties string by comma and trim whitespace
+  const specialtiesArray = apiChef.specialties
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  return {
+    id: apiChef.id,
+    name: apiChef.name,
+    cuisine: cuisineArray.length > 0 ? cuisineArray : ["General"],
+    hourlyRate: parseFloat(apiChef.hourlyRate) || 0,
+    location: apiChef.location,
+    distance: parseFloat(apiChef.distance) || 0,
+    image: apiChef.image,
+    rating: parseFloat(apiChef.rating) || 0,
+    reviewCount: parseInt(apiChef.reviewCount) || 0,
+    experience: parseInt(apiChef.experience) || 0,
+    bio: apiChef.bio,
+    specialties: specialtiesArray.length > 0 ? specialtiesArray : [],
+    available: apiChef.available.toLowerCase() === "yes" || apiChef.available.toLowerCase() === "daily",
+    isVeg: apiChef.isVeg === "1",
+    onlyIndoorCooking: apiChef.onlyIndoorCooking === "1",
+  };
+};
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userPhone, setUserPhone] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedChef, setSelectedChef] = useState<Chef | null>(null);
-  const [currentView, setCurrentView] = useState<"browse" | "bookings">("browse");
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedChef, setSelectedChef] = useState<Chef | null>(
+    null,
+  );
+  const [currentView, setCurrentView] = useState<
+    "browse" | "bookings"
+  >("browse");
+  const [selectedBooking, setSelectedBooking] =
+    useState<Booking | null>(null);
   
+  // API state
+  const [chefs, setChefs] = useState<Chef[]>([]);
+  const [isLoadingChefs, setIsLoadingChefs] = useState(true);
+  const [chefsError, setChefsError] = useState<string | null>(null);
+
+  // Fetch chefs from API
+  useEffect(() => {
+    const fetchChefs = async () => {
+      setIsLoadingChefs(true);
+      setChefsError(null);
+      
+      try {
+        const response = await fetch("https://api.chefhub.in");
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch chefs: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.users && Array.isArray(data.users)) {
+          const transformedChefs = data.users.map(transformChefData);
+          setChefs(transformedChefs);
+        } else {
+          throw new Error("Invalid API response format");
+        }
+      } catch (error) {
+        console.error("Error fetching chefs:", error);
+        setChefsError(error instanceof Error ? error.message : "Failed to load chefs");
+        toast.error("Failed to load chefs. Please try again later.");
+      } finally {
+        setIsLoadingChefs(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchChefs();
+    }
+  }, [isAuthenticated]);
+
   // Sample bookings for demonstration
   const [bookings, setBookings] = useState<Booking[]>([
     {
       id: "BK1001",
-      chef: MOCK_CHEFS[0],
+      chef: {
+        id: "1",
+        name: "Maria Rodriguez",
+        cuisine: ["Italian", "Mediterranean"],
+        hourlyRate: 6225,
+        location: "Downtown",
+        distance: 2.3,
+        image: "https://dt4l9bx31tioh.cloudfront.net/eazymedia/eazytrendz/4615/trend20241028055104.jpg?width=750&height=436&mode=crop",
+        rating: 4.9,
+        reviewCount: 127,
+        experience: 12,
+        bio: "Specializing in authentic Italian cuisine with a modern twist.",
+        specialties: ["Pasta", "Risotto", "Seafood"],
+        available: true,
+      },
       date: "2025-10-20",
       time: "18:00",
       guests: 8,
@@ -176,7 +146,21 @@ export default function App() {
     },
     {
       id: "BK1002",
-      chef: MOCK_CHEFS[1],
+      chef: {
+        id: "2",
+        name: "James Chen",
+        cuisine: ["Asian", "Fusion"],
+        hourlyRate: 7055,
+        location: "Westside",
+        distance: 4.1,
+        image: "https://images.unsplash.com/photo-1583394293214-28ded15ee548?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhc2lhbiUyMGNoZWZ8ZW58MXx8fHwxNzYwNTA5MTk1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+        rating: 4.8,
+        reviewCount: 203,
+        experience: 15,
+        bio: "Award-winning chef blending traditional Asian flavors.",
+        specialties: ["Sushi", "Dim Sum", "Wok Dishes"],
+        available: true,
+      },
       date: "2025-10-18",
       time: "19:30",
       guests: 12,
@@ -207,7 +191,21 @@ export default function App() {
     },
     {
       id: "BK1003",
-      chef: MOCK_CHEFS[3],
+      chef: {
+        id: "4",
+        name: "Carlos Mendez",
+        cuisine: ["Mexican", "Latin"],
+        hourlyRate: 5395,
+        location: "Southside",
+        distance: 3.2,
+        image: "https://images.unsplash.com/photo-1743353341063-85931c798dc8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBjb29rfGVufDF8fHx8MTc2MDUwOTE5M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+        rating: 4.7,
+        reviewCount: 156,
+        experience: 8,
+        bio: "Bringing authentic Mexican street food.",
+        specialties: ["Tacos", "Mole", "Ceviche"],
+        available: true,
+      },
       date: "2025-09-28",
       time: "20:00",
       guests: 6,
@@ -250,14 +248,14 @@ export default function App() {
 
   const allCuisines = useMemo(() => {
     const cuisines = new Set<string>();
-    MOCK_CHEFS.forEach((chef) => {
+    chefs.forEach((chef) => {
       chef.cuisine.forEach((c) => cuisines.add(c));
     });
     return Array.from(cuisines).sort();
-  }, []);
+  }, [chefs]);
 
   const filteredChefs = useMemo(() => {
-    return MOCK_CHEFS.filter((chef) => {
+    return chefs.filter((chef) => {
       // Search filter
       const matchesSearch =
         chef.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -279,7 +277,7 @@ export default function App() {
 
       return matchesSearch && matchesPrice && matchesDistance && matchesCuisine;
     });
-  }, [searchQuery, filters]);
+  }, [chefs, searchQuery, filters]);
 
   const handleBookChef = (chef: Chef) => {
     setSelectedChef(chef);
@@ -408,7 +406,7 @@ export default function App() {
         />
       </div>
 
-      <main className="container mx-auto px-4 py-6 md:py-8">
+      <main className="container mx-auto px-4 py-6 md:py-8 pb-24 md:pb-8">
         {selectedBooking ? (
           <OrderTracking
             booking={selectedBooking}
@@ -422,17 +420,41 @@ export default function App() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="mb-1">Available Chefs</h2>
-                  <p className="text-muted-foreground">
-                    {filteredChefs.length} chef{filteredChefs.length !== 1 ? "s" : ""} found
-                    {activeFilterCount > 0 && ` with ${activeFilterCount} active filter${activeFilterCount !== 1 ? "s" : ""}`}
-                  </p>
+                  {!isLoadingChefs && (
+                    <p className="text-muted-foreground">
+                      {filteredChefs.length} chef
+                      {filteredChefs.length !== 1 ? "s" : ""}{" "}
+                      found
+                      {activeFilterCount > 0 &&
+                        ` with ${activeFilterCount} active filter${activeFilterCount !== 1 ? "s" : ""}`}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
-            {filteredChefs.length === 0 ? (
+            {isLoadingChefs ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Loading chefs...</p>
+              </div>
+            ) : chefsError ? (
               <div className="text-center py-16">
-                <p className="text-muted-foreground mb-4">No chefs found matching your criteria</p>
+                <p className="text-destructive mb-4">
+                  {chefsError}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => window.location.reload()}
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : filteredChefs.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="text-muted-foreground mb-4">
+                  No chefs found matching your criteria
+                </p>
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -450,7 +472,11 @@ export default function App() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredChefs.map((chef) => (
-                  <ChefCard key={chef.id} chef={chef} onBook={handleBookChef} />
+                  <ChefCard
+                    key={chef.id}
+                    chef={chef}
+                    onBook={handleBookChef}
+                  />
                 ))}
               </div>
             )}
