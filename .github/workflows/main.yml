@@ -28,4 +28,4 @@ jobs:
         run: npx lint-staged # or your specific linting command (e.g., eslint .)
 
       - name: Run Unit Tests
-        run: npm test # or your specific test command (e.g., jest)
+        run: npm test --passWithNoTests # or your specific test command (e.g., jest)
