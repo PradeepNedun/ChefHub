@@ -14,6 +14,7 @@ import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner@2.0.3";
 import { Loader2 } from "lucide-react";
 import type { Booking } from "./types/booking";
+import API_BASE_PATH from "./constants";
 
 // Transform API response to Chef interface
 const transformChefData = (apiChef: ChefAPIResponse): Chef => {
@@ -74,7 +75,7 @@ export default function App() {
       setChefsError(null);
       
       try {
-        const response = await fetch("https://api.chefhub.in");
+        const response = await fetch(API_BASE_PATH);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch chefs: ${response.status}`);
