@@ -6,6 +6,8 @@ import { Label } from "./ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
 import { ChefHat, ArrowLeft, CheckCircle2 } from "lucide-react@0.487.0";
 import { toast } from "sonner@2.0.3";
+import axios from "axios";
+import CONSTANTS_STRINGS from "../constants";
 
 interface LoginProps {
   onLoginSuccess: (phoneNumber: string) => void;
@@ -28,10 +30,18 @@ export function Login({ onLoginSuccess }: LoginProps) {
     }
 
     setIsLoading(true);
+    axios.get(`${CONSTANTS_STRINGS.base_url}${CONSTANTS_STRINGS.end_points.generateOtp}&user_id=${phoneNumber}`)
+     .then(response => {
+      console.log("OTP generated successfully:", response.data);
+          // sendMsgToUser(response.data.otp);
+      })
+      .catch(err => {
+        console.error(err);
+       });
     setTimeout(() => {
       setIsLoading(false);
-      setStep("success");
-      setTimeout(() => onLoginSuccess(phoneNumber), 1500);
+      setStep("otp");
+      // setTimeout(() => onLoginSuccess(phoneNumber), 1500);
     }, 1000);
   };
 
@@ -42,16 +52,29 @@ export function Login({ onLoginSuccess }: LoginProps) {
     }
 
     setIsLoading(true);
+    const payload = {
+      user_id: phoneNumber,
+      otp: otp
+    };
+    axios.post(`${CONSTANTS_STRINGS.base_url}${CONSTANTS_STRINGS.end_points.verifyOtp}`, payload)
+      .then(response => {
+        console.log("Message sent successfully:", response.data);
+          setIsLoading(false);
+          setStep("success");
+      })
+      .catch(err => {
+        console.error("Error sending message:", err);
+      });
     // Simulate OTP verification (accept any 6-digit OTP for demo)
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep("success");
+    // setTimeout(() => {
+    //   setIsLoading(false);
+    //   setStep("success");
       
-      // Wait a moment to show success state, then complete login
-      setTimeout(() => {
+    //   // Wait a moment to show success state, then complete login
+    //   setTimeout(() => {
         
-      }, 1500);
-    }, 1000);
+    //   }, 1500);
+    // }, 1000);
   };
 
   const handleResendOtp = () => {
