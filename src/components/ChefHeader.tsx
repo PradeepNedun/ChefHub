@@ -12,14 +12,15 @@ import {
 import { Avatar, AvatarFallback } from "./ui/avatar";
 
 interface ChefHeaderProps {
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  onFilterClick: () => void;
-  currentView: "browse" | "bookings";
-  onViewChange: (view: "browse" | "bookings") => void;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  onFilterClick?: () => void;
+  currentView?: "browse" | "bookings";
+  onViewChange?: (view: "browse" | "bookings") => void;
   bookingCount?: number;
   onLogout?: () => void;
   phoneNumber?: string;
+  isNeedSearch?: boolean;
 }
 
 export function ChefHeader({ 
@@ -30,7 +31,8 @@ export function ChefHeader({
   onViewChange,
   bookingCount = 0,
   onLogout,
-  phoneNumber
+  phoneNumber,
+  isNeedSearch = false
 }: ChefHeaderProps) {
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -103,7 +105,8 @@ export function ChefHeader({
             {/* // )} */}
           </div>
         </div>
-
+      {
+        isNeedSearch && (
         <div className="flex items-center gap-3">
           <div className="flex-1 max-w-2xl">
             <div className="relative">
@@ -123,6 +126,8 @@ export function ChefHeader({
             Filters
           </Button>
         </div>
+        )
+      }
       </div>
     </header>
   );

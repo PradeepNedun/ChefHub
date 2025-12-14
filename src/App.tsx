@@ -18,6 +18,9 @@ import CONSTANTS_STRINGS from "./constants";
 import { Location } from "./interfaces";
 import axios from "axios";
 import { LocationPermissionDialog } from "./components/locationPermissionDialog";
+import { useNavigate } from "react-router-dom";
+import {useAppDispatch} from "./customHooks/ReduxHook";
+import {setSelectedChef} from "./slice/BookChef";
 import './styles/commonStyle.scss'
 
 
@@ -59,9 +62,9 @@ export default function App() {
   const [userPhone, setUserPhone] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedChef, setSelectedChef] = useState<Chef | null>(
-    null,
-  );
+  // const [selectedChef, setSelectedChef] = useState<Chef | null>(
+  //   null,
+  // );
   const [currentView, setCurrentView] = useState<
     "browse" | "bookings"
   >("browse");
@@ -73,6 +76,8 @@ export default function App() {
   const [isLoadingChefs, setIsLoadingChefs] = useState(true);
   const [chefsError, setChefsError] = useState<string | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   // Fetch chefs from API
   useEffect(() => {
@@ -292,7 +297,8 @@ export default function App() {
   }, [chefs, searchQuery, filters]);
 
   const handleBookChef = (chef: Chef) => {
-    setSelectedChef(chef);
+    dispatch(setSelectedChef(chef));
+    chef?.id && navigate(`/bookchef/${chef.id}`)
   };
 
   const handleBookingCreated = (bookingData: {
@@ -446,6 +452,7 @@ export default function App() {
           bookingCount={activeBookingsCount}
           onLogout={handleLogout}
           phoneNumber={userPhone}
+          isNeedSearch={true}
         />
       </div>
 
@@ -546,12 +553,12 @@ export default function App() {
         availableCuisines={allCuisines}
       />
 
-      <BookingDialog
+      {/* <BookingDialog
         isOpen={selectedChef !== null}
         onClose={() => setSelectedChef(null)}
         chef={selectedChef}
         onBookingCreated={handleBookingCreated}
-      />
+      /> */}
 
       {/* Mobile Bottom Navigation - hidden on desktop */}
       <div className="md:hidden">
