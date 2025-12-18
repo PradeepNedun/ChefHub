@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, Clock, MapPin, IndianRupee } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -15,6 +15,11 @@ import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import type { Chef } from "./ChefCard";
+import {useAppSelector} from "../customHooks/ReduxHook"
+import axios from "axios";
+import CONSTANTS_STRINGS from "../constants";
+import { useParams} from "react-router-dom";
+import { ChefHeader } from "./ChefHeader";
 
 interface BookingDialogProps {
   isOpen: boolean;
@@ -32,12 +37,25 @@ interface BookingDialogProps {
   }) => void;
 }
 
-export function BookingDialog({ isOpen, onClose, chef, onBookingCreated }: BookingDialogProps) {
+export function BookingDialog() {
   const [hours, setHours] = useState(3);
+  const { id } = useParams<{ id: string }>();
+  const [chef, setChef] = useState();
+
+  useEffect(()=>{
+    (async()=> {
+    try {
+    const getUser = await axios.get(`${CONSTANTS_STRINGS.base_url}${CONSTANTS_STRINGS.end_points.getData}`, { params: { id: id } });
+    setChef(getUser?.data?.users[0]);
+
+    } catch(err){
+    console.log(err);
+    }})();
+  },[])
 
   if (!chef) return null;
 
-  const estimatedTotal = chef.hourlyRate * hours;
+  const estimatedTotal = chef?.hourlyRate * hours;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -53,19 +71,22 @@ export function BookingDialog({ isOpen, onClose, chef, onBookingCreated }: Booki
       occasion: formData.get("occasion") as string,
       details: formData.get("details") as string,
     };
-    onBookingCreated(bookingData);
-    onClose();
+    // onBookingCreated(bookingData);
+    // onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Book {chef.name}</DialogTitle>
-          <DialogDescription>Fill out the details to request a booking</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
+    // <Dialog open={isOpen} onOpenChange={onClose}>
+    //   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    //     <DialogHeader>
+    //       <DialogTitle>Book {chef.name}</DialogTitle>
+    //       <DialogDescription>Fill out the details to request a booking</DialogDescription>
+    //     </DialogHeader>
+    <>
+         <div className="hidden md:block">
+                <ChefHeader/>
+        </div>
+        <div className="space-y-6 pad-book-chef">
           <div className="flex gap-4">
             <div className="w-24 h-24 rounded-lg overflow-hidden bg-muted shrink-0">
               <ImageWithFallback
@@ -77,7 +98,7 @@ export function BookingDialog({ isOpen, onClose, chef, onBookingCreated }: Booki
             <div className="flex-1">
               <h3 className="mb-2">{chef.name}</h3>
               <div className="flex flex-wrap gap-1 mb-2">
-                {chef.cuisine.map((c) => (
+                {[chef?.cuisine].map((c) => (
                   <Badge key={c} variant="outline">
                     {c}
                   </Badge>
@@ -200,14 +221,16 @@ export function BookingDialog({ isOpen, onClose, chef, onBookingCreated }: Booki
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" >
                 Cancel
               </Button>
               <Button type="submit">Send Booking Request</Button>
             </DialogFooter>
           </form>
         </div>
-      </DialogContent>
-    </Dialog>
+        </>
+    //   </DialogContent>
+    // </Dialog>
+    
   );
 }

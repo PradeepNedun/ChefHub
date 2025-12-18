@@ -14,7 +14,15 @@ import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner@2.0.3";
 import { Loader2 } from "lucide-react";
 import type { Booking } from "./types/booking";
-import API_BASE_PATH from "./constants";
+import CONSTANTS_STRINGS from "./constants";
+import { Location } from "./interfaces";
+import axios from "axios";
+import { LocationPermissionDialog } from "./components/locationPermissionDialog";
+import { useNavigate } from "react-router-dom";
+import {useAppDispatch} from "./customHooks/ReduxHook";
+import {setSelectedChef} from "./slice/BookChef";
+import './styles/commonStyle.scss'
+
 
 // Transform API response to Chef interface
 const transformChefData = (apiChef: ChefAPIResponse): Chef => {
@@ -54,9 +62,9 @@ export default function App() {
   const [userPhone, setUserPhone] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedChef, setSelectedChef] = useState<Chef | null>(
-    null,
-  );
+  // const [selectedChef, setSelectedChef] = useState<Chef | null>(
+  //   null,
+  // );
   const [currentView, setCurrentView] = useState<
     "browse" | "bookings"
   >("browse");
@@ -67,6 +75,9 @@ export default function App() {
   const [chefs, setChefs] = useState<Chef[]>([]);
   const [isLoadingChefs, setIsLoadingChefs] = useState(true);
   const [chefsError, setChefsError] = useState<string | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   // Fetch chefs from API
   useEffect(() => {
@@ -75,8 +86,7 @@ export default function App() {
       setChefsError(null);
       
       try {
-        const response = await fetch(API_BASE_PATH);
-        
+        const response = await fetch(`${CONSTANTS_STRINGS.base_url}${CONSTANTS_STRINGS.end_points.getData}`);
         if (!response.ok) {
           throw new Error(`Failed to fetch chefs: ${response.status}`);
         }
@@ -97,10 +107,11 @@ export default function App() {
         setIsLoadingChefs(false);
       }
     };
+    setPermissionModalOpen(true);
 
-    if (isAuthenticated) {
+    // if (isAuthenticated) {
       fetchChefs();
-    }
+    // }
   }, [isAuthenticated]);
 
   // Sample bookings for demonstration
@@ -246,6 +257,11 @@ export default function App() {
     maxDistance: 50,
     cuisineTypes: [],
   });
+  const [isPermissionModalOpen, setPermissionModalOpen] = useState<boolean>(false);
+
+  const permissionModalClose = () =>{
+      setPermissionModalOpen(false);
+  };
 
   const allCuisines = useMemo(() => {
     const cuisines = new Set<string>();
@@ -281,7 +297,8 @@ export default function App() {
   }, [chefs, searchQuery, filters]);
 
   const handleBookChef = (chef: Chef) => {
-    setSelectedChef(chef);
+    dispatch(setSelectedChef(chef));
+    chef?.id && navigate(`/bookchef/${chef.id}`)
   };
 
   const handleBookingCreated = (bookingData: {
@@ -373,14 +390,54 @@ export default function App() {
     setSelectedChef(null);
   };
 
-  if (!isAuthenticated) {
-    return (
-      <>
-        <Login onLoginSuccess={handleLoginSuccess} />
-        <Toaster />
-      </>
-    );
-  }
+  // if (!isAuthenticated) {
+  //   return (
+  //     <>
+  //       <Login onLoginSuccess={handleLoginSuccess} />
+  //       <Toaster />
+  //     </>
+  //   );
+  // }
+
+
+  const getBrowserLocation = (permission) => {
+    permissionModalClose();
+      if (!navigator.geolocation || !permission) {
+        // setError("Geolocation is not supported by your browser");
+        getIpLocation(); // fallback
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocation({ latitude, longitude, source: "browser" });
+        },
+        (err) => {
+          console.warn("Browser location error:", err.message);
+          getIpLocation(); // fallback on deny or failure
+        },
+        { timeout: 5000 }
+      );
+    };
+
+    const getIpLocation = async () => {
+      try {
+        const res = await axios.get("https://ipapi.co/json/");
+        const data = res.data;
+
+        setLocation({
+          latitude: data.latitude,
+          longitude: data.longitude,
+          city: data.city,
+          region: data.region,
+          country: data.country_name,
+          source: "ip",
+        });
+      } catch (err) {
+        // setError("Unable to fetch location from IP");
+      }
+    };
 
   return (
     <div className="min-h-screen bg-background md:pb-0 pb-20">
@@ -395,6 +452,7 @@ export default function App() {
           bookingCount={activeBookingsCount}
           onLogout={handleLogout}
           phoneNumber={userPhone}
+          isNeedSearch={true}
         />
       </div>
 
@@ -495,12 +553,12 @@ export default function App() {
         availableCuisines={allCuisines}
       />
 
-      <BookingDialog
+      {/* <BookingDialog
         isOpen={selectedChef !== null}
         onClose={() => setSelectedChef(null)}
         chef={selectedChef}
         onBookingCreated={handleBookingCreated}
-      />
+      /> */}
 
       {/* Mobile Bottom Navigation - hidden on desktop */}
       <div className="md:hidden">
@@ -515,6 +573,7 @@ export default function App() {
       </div>
       
       <Toaster />
+      <LocationPermissionDialog isOpen={isPermissionModalOpen} onClose={permissionModalClose} locationCallback={getBrowserLocation} />
     </div>
   );
 }
